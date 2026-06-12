@@ -80,7 +80,7 @@ impl OrderService {
             ));
         }
 
-        // Resolve products and build items with server-side price calculation
+        // 1. Resolve products, validate stock, calculate totals
         let mut calculated_items: Vec<(String, String, i32, Decimal, Decimal)> = Vec::new();
         let mut total_amount = Decimal::ZERO;
 
@@ -99,6 +99,14 @@ impl OrderService {
                     AppError::NotFound(format!("Product '{}' not found", item.product_id))
                 })?;
 
+            // Validate stock availability
+            if product.stock < item.quantity {
+                return Err(AppError::ValidationError(format!(
+                    "Insufficient stock for '{}'. Available: {}, requested: {}",
+                    product.name, product.stock, item.quantity
+                )));
+            }
+
             let unit_price = product.price;
             let qty = Decimal::from(item.quantity);
             let subtotal = unit_price * qty;
@@ -113,11 +121,17 @@ impl OrderService {
             ));
         }
 
+        // 2. Persist the order
         let order_id = Order::new_id();
         let order = self
             .order_repo
             .create(&order_id, user_id, total_amount, &calculated_items)
             .await?;
+
+        // 3. Decrement stock for each item (after successful order creation)
+        for (_, product_id, qty, _, _) in &calculated_items {
+            self.product_repo.decrement_stock(product_id, *qty).await?;
+        }
 
         let items = self.order_repo.find_items_by_order(&order.id).await?;
 
@@ -148,7 +162,7 @@ impl OrderService {
             ));
         }
 
-        // Recalculate with server-side prices
+        // Recalculate with server-side prices (no additional stock check on update)
         let mut calculated_items: Vec<(String, String, i32, Decimal, Decimal)> = Vec::new();
         let mut total_amount = Decimal::ZERO;
 
@@ -210,7 +224,7 @@ impl OrderService {
     }
 }
 
-fn order_to_response(order: Order, items: Vec<OrderItemResponse>) -> OrderResponse {
+pub fn order_to_response(order: Order, items: Vec<OrderItemResponse>) -> OrderResponse {
     OrderResponse {
         id: order.id,
         total_amount: order.total_amount,

@@ -1,21 +1,20 @@
-Berikut adalah terjemahan dokumen `README.md` ke dalam bahasa Indonesia:
+# Kasir API
 
-# API Kasir
+Backend REST API untuk sistem Point-of-Sale (Kasir) UMKM. Dibangun dengan Rust, Axum, SQLx, dan MySQL. Mendukung autentikasi JWT, manajemen produk (termasuk gambar & stok), order dengan validasi stok, dashboard penjualan, dan pemrosesan order via suara menggunakan fuzzy matching.
 
-REST API siap produksi untuk sistem Point-of-Sale (Kasir) yang dibangun menggunakan Rust, Axum, SQLx, dan MySQL.
-
-## Teknologi yang Digunakan
+## Tech Stack
 
 | Lapisan | Teknologi |
-| --- | --- |
-| Bahasa | Rust (edisi 2021) |
-| Framework Web | Axum 0.8 |
+|---|---|
+| Bahasa | Rust (2021 edition) |
+| Web Framework | Axum 0.8 |
 | Database | MySQL (via SQLx 0.8) |
 | Autentikasi | JWT (jsonwebtoken 9) |
-| Hashing Kata Sandi | bcrypt |
+| Hashing Password | bcrypt |
 | Validasi | validator 0.18 |
 | Konfigurasi | dotenvy |
-| Integrasi AI | Reqwest → Gemini API |
+| Fuzzy Matching | strsim 0.11 (Jaro-Winkler) |
+| AI / Voice | Reqwest → Gemini API |
 
 ---
 
@@ -23,115 +22,113 @@ REST API siap produksi untuk sistem Point-of-Sale (Kasir) yang dibangun mengguna
 
 ### 1. Prasyarat
 
-* Rust (versi stable)
-* MySQL 8.0+
+- Rust (stable)
+- MySQL 8.0+
 
 ### 2. Konfigurasi
 
-Salin `.env.example` menjadi `.env` dan isi nilai-nilainya:
+Salin `.env.example` ke `.env` dan isi nilainya:
 
 ```env
 APP_HOST=127.0.0.1
 APP_PORT=8000
 DATABASE_URL=mysql://root:password@localhost:3306/kasir
-JWT_SECRET=rahasia-kunci-jwt-anda-ganti-di-produksi
-AI_API_KEY=kunci-api-gemini-anda
+JWT_SECRET=ganti-dengan-secret-yang-aman
+AI_API_KEY=api-key-gemini-anda
 AI_API_URL=https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent
-
 ```
 
-### 3. Persiapan Database
+### 3. Migrasi Database
 
-Jalankan migrasi secara berurutan:
+Jalankan migration secara berurutan:
 
 ```bash
 mysql -u root -p kasir < migrations/001_create_users_table.sql
 mysql -u root -p kasir < migrations/002_create_products_table.sql
 mysql -u root -p kasir < migrations/003_create_orders_tables.sql
 mysql -u root -p kasir < migrations/004_create_feedback_table.sql
-
+mysql -u root -p kasir < migrations/005_add_product_image_stock.sql
 ```
 
-### 4. Menjalankan Aplikasi
+### 4. Jalankan Server
 
 ```bash
 cargo run
-
 ```
 
-Server akan berjalan pada `http://127.0.0.1:8000`.
+Server berjalan di `http://127.0.0.1:8000`.
 
 ---
 
 ## Arsitektur
 
-```text
+```
 src/
-├── config.rs             # Konfigurasi environment
-├── state.rs              # AppState (pool db + konfigurasi)
-├── main.rs               # Titik masuk (Entry point)
+├── config.rs
+├── state.rs                  # AppState (db pool + config)
+├── main.rs
 ├── database/
-│   └── connetion.rs      # Pembuatan pool MySQL
-├── models/               # Struct SQLx FromRow
+├── models/                   # Struct SQLx FromRow
 │   ├── user.rs
-│   ├── product.rs
+│   ├── product.rs            # + image_url, stock
 │   ├── order.rs
 │   └── feedback.rs
-├── dto/                  # DTO Request/Response
+├── dto/                      # DTO Request/Response
 │   ├── auth/
-│   ├── product.rs
+│   ├── product.rs            # + image_url, stock
 │   ├── order.rs
 │   ├── feedback.rs
-│   └── ai.rs
-├── repositories/         # Lapisan akses database
+│   ├── dashboard.rs          # (BARU)
+│   └── ai.rs                 # + ParseOrderRequest, MatchedOrderItem
+├── repositories/             # Layer akses database
 │   ├── user_repository.rs
-│   ├── product_repository.rs
+│   ├── product_repository.rs # + find_all_active_for_user, decrement_stock
 │   ├── order_repository.rs
-│   └── feedback_repository.rs
-├── services/             # Lapisan logika bisnis
+│   ├── feedback_repository.rs
+│   └── dashboard_repository.rs  # (BARU) - SQL agregat
+├── services/                 # Layer business logic
 │   ├── auth/
-│   ├── product_service.rs
-│   ├── order_service.rs
+│   ├── product_service.rs    # + image_url, stock
+│   ├── order_service.rs      # + validasi & kurangi stok
 │   ├── feedback_services.rs
-│   └── ai_service.rs
-├── handlers/             # Handler HTTP
+│   ├── dashboard_service.rs  # (BARU)
+│   └── ai_service.rs         # + parse_order + fuzzy matching
+├── handlers/                 # HTTP handlers
 │   ├── auth/
 │   ├── products.rs
 │   ├── orders.rs
 │   ├── feedback.rs
-│   └── ai.rs
-├── routes/               # Registrasi rute
+│   ├── dashboard.rs          # (BARU)
+│   └── ai.rs                 # + parse_order
+├── routes/                   # Registrasi route
 │   ├── auth.rs
 │   ├── product.rs
 │   ├── order.rs
 │   ├── feedback.rs
-│   └── ai.rs
+│   ├── dashboard.rs          # (BARU)
+│   └── ai.rs                 # + /parse-order
 ├── middleware/
-│   └── jwt.rs            # Middleware autentikasi JWT
+│   └── jwt.rs
 └── errors/
-    └── app_error.rs      # Penanganan error terpadu
-
+    └── app_error.rs
 ```
 
 ---
 
-## Format Respons
+## Format Response
 
-Semua endpoint mengembalikan struktur JSON yang konsisten.
+Semua endpoint menggunakan format JSON yang konsisten.
 
 **Sukses (satu item):**
-
 ```json
 {
   "success": true,
   "message": "...",
   "data": { ... }
 }
-
 ```
 
-**Sukses (daftar dengan paginasi):**
-
+**Sukses (daftar paginasi):**
 ```json
 {
   "success": true,
@@ -141,29 +138,25 @@ Semua endpoint mengembalikan struktur JSON yang konsisten.
   "page": 1,
   "limit": 10
 }
-
 ```
 
 **Error:**
-
 ```json
 {
   "success": false,
   "message": "Deskripsi error",
   "data": null
 }
-
 ```
 
 ---
 
 ## Autentikasi
 
-Endpoint yang dilindungi memerlukan token Bearer pada header `Authorization`:
+Endpoint yang dilindungi membutuhkan header `Authorization`:
 
-```text
-Authorization: Bearer <token_jwt>
-
+```
+Authorization: Bearer <jwt_token>
 ```
 
 Token JWT berlaku selama **7 hari**.
@@ -174,106 +167,27 @@ Token JWT berlaku selama **7 hari**.
 
 ### Auth — `/api/auth`
 
-| Metode | Path | Autentikasi | Deskripsi |
-| --- | --- | --- | --- |
-| `POST` | `/api/auth/register` | Publik | Mendaftarkan pengguna baru |
-| `POST` | `/api/auth/login` | Publik | Login dan mendapatkan JWT |
-| `POST` | `/api/auth/logout` | 🔒 JWT | Logout (klien harus membuang token) |
-| `GET` | `/api/auth/me` | 🔒 JWT | Dapatkan profil pengguna yang terautentikasi |
-| `PUT` | `/api/auth/me` | 🔒 JWT | Perbarui profil pengguna |
-
-#### `POST /api/auth/register`
-
-```json
-{
-  "name": "John Doe",
-  "email": "john@example.com",
-  "password": "secret123",
-  "description": "Bio opsional"
-}
-
-```
-
-**Respons `201`:**
-
-```json
-{
-  "success": true,
-  "message": "Registrasi berhasil",
-  "data": {
-    "id": "uuid",
-    "name": "John Doe",
-    "email": "john@example.com",
-    "description": "Bio opsional"
-  }
-}
-
-```
-
-#### `POST /api/auth/login`
-
-```json
-{
-  "email": "john@example.com",
-  "password": "secret123"
-}
-
-```
-
-**Respons `200`:**
-
-```json
-{
-  "success": true,
-  "message": "Login berhasil",
-  "data": {
-    "token": "eyJ...",
-    "user": {
-      "id": "uuid",
-      "name": "John Doe",
-      "email": "john@example.com",
-      "description": null
-    }
-  }
-}
-
-```
-
-#### `PUT /api/auth/me` 🔒
-
-Semua field bersifat opsional:
-
-```json
-{
-  "name": "Nama Baru",
-  "email": "new@example.com",
-  "password": "passwordbaru",
-  "description": "Bio yang diperbarui"
-}
-
-```
+| Method | Path | Auth | Deskripsi |
+|--------|------|------|-----------|
+| `POST` | `/api/auth/register` | Publik | Daftar akun baru |
+| `POST` | `/api/auth/login` | Publik | Login, terima JWT |
+| `POST` | `/api/auth/logout` | 🔒 JWT | Logout (hapus token di sisi klien) |
+| `GET`  | `/api/auth/me` | 🔒 JWT | Profil pengguna yang login |
+| `PUT`  | `/api/auth/me` | 🔒 JWT | Update profil |
 
 ---
 
 ### Produk — `/api/products` 🔒
 
-Semua endpoint produk memerlukan JWT. Pengguna hanya dapat mengakses produk mereka sendiri.
+Semua endpoint produk memerlukan JWT. User hanya bisa akses produk miliknya sendiri.
 
-| Metode | Path | Deskripsi |
-| --- | --- | --- |
-| `GET` | `/api/products` | Tampilkan daftar produk sendiri (paginasi) |
-| `GET` | `/api/products/:id` | Dapatkan detail produk |
+| Method | Path | Deskripsi |
+|--------|------|-----------|
+| `GET` | `/api/products` | Daftar produk (paginasi, cari nama) |
+| `GET` | `/api/products/:id` | Detail produk |
 | `POST` | `/api/products` | Buat produk baru |
-| `PUT` | `/api/products/:id` | Perbarui produk |
-| `DELETE` | `/api/products/:id` | Hapus produk (soft-delete) |
-
-#### Parameter Query untuk `GET /api/products`
-
-| Parameter | Tipe | Default | Deskripsi |
-| --- | --- | --- | --- |
-| `page` | int | 1 | Nomor halaman |
-| `limit` | int | 10 | Item per halaman (maks 100) |
-| `search` | string | — | Pencarian berdasarkan nama |
+| `PUT` | `/api/products/:id` | Update produk |
+| `DELETE` | `/api/products/:id` | Hapus produk (soft delete) |
 
 #### `POST /api/products`
 
@@ -281,60 +195,32 @@ Semua endpoint produk memerlukan JWT. Pengguna hanya dapat mengakses produk mere
 {
   "name": "Kopi Susu",
   "price": "15000.00",
-  "description": "Deskripsi opsional"
+  "description": "Kopi susu segar",
+  "image_url": "https://example.com/kopi.jpg",
+  "stock": 50
 }
-
 ```
 
-**Validasi:**
-
-* `name`: 2–255 karakter, harus unik per pengguna
-* `price`: harus > 0
-
-#### `PUT /api/products/:id`
-
-Semua field bersifat opsional:
-
-```json
-{
-  "name": "Kopi Hitam",
-  "price": "12000.00",
-  "description": "Deskripsi yang diperbarui"
-}
-
-```
-
-**Error:**
-
-* `404` — produk tidak ditemukan
-* `403` — produk milik pengguna lain
-* `409` — nama duplikat
+**Aturan:**
+- `name`: 2–255 karakter, unik per user
+- `price`: harus > 0
+- `image_url`: opsional, harus URL valid
+- `stock`: opsional, default 0
 
 ---
 
-### Pesanan — `/api/orders` 🔒
+### Order — `/api/orders` 🔒
 
-Semua endpoint pesanan memerlukan JWT. Pengguna hanya dapat mengakses pesanan mereka sendiri.
+> ⚠️ **Harga dihitung server-side.** Harga dari klien diabaikan.
+> ⚠️ **Stok divalidasi** sebelum order disimpan, dan **dikurangi otomatis** setelah berhasil.
 
-> ⚠️ **Perhitungan harga di sisi server:** Harga dimuat dari database. Harga yang diberikan klien akan diabaikan.
-
-| Metode | Path | Deskripsi |
-| --- | --- | --- |
-| `GET` | `/api/orders` | Tampilkan pesanan sendiri (paginasi, dapat disaring) |
-| `GET` | `/api/orders/:id` | Dapatkan detail pesanan beserta itemnya |
-| `POST` | `/api/orders` | Buat pesanan |
-| `PUT` | `/api/orders/:id` | Perbarui pesanan |
-| `DELETE` | `/api/orders/:id` | Hapus pesanan (soft-delete) |
-
-#### Parameter Query untuk `GET /api/orders`
-
-| Parameter | Tipe | Default | Deskripsi |
-| --- | --- | --- | --- |
-| `page` | int | 1 | Nomor halaman |
-| `limit` | int | 10 | Item per halaman (maks 100) |
-| `status` | int | — | Saring berdasarkan status (0=menunggu, 1=selesai) |
-| `start_date` | ISO 8601 | — | Saring dari tanggal |
-| `end_date` | ISO 8601 | — | Saring sampai tanggal |
+| Method | Path | Deskripsi |
+|--------|------|-----------|
+| `GET` | `/api/orders` | Daftar order (paginasi, filter status/tanggal) |
+| `GET` | `/api/orders/:id` | Detail order beserta item |
+| `POST` | `/api/orders` | Buat order baru |
+| `PUT` | `/api/orders/:id` | Update order |
+| `DELETE` | `/api/orders/:id` | Hapus order (soft delete) |
 
 #### `POST /api/orders`
 
@@ -345,172 +231,255 @@ Semua endpoint pesanan memerlukan JWT. Pengguna hanya dapat mengakses pesanan me
     { "product_id": "uuid", "quantity": 1 }
   ]
 }
-
 ```
 
-**Respons `201`:**
+**Alur:**
+1. Validasi stok tiap produk
+2. Hitung `unit_price` dari database (bukan dari klien)
+3. Hitung `subtotal = quantity × unit_price`
+4. Hitung `total_amount = Σ subtotals`
+5. Simpan order & order_items
+6. Kurangi stok tiap produk
+
+**Error stok tidak cukup (422):**
+```json
+{
+  "success": false,
+  "message": "Insufficient stock for 'Kopi Susu'. Available: 3, requested: 5",
+  "data": null
+}
+```
+
+---
+
+### Feedback — `/api/feedback`
+
+| Method | Path | Auth | Deskripsi |
+|--------|------|------|-----------|
+| `GET` | `/api/feedback` | Publik | Daftar feedback publik |
+| `GET` | `/api/feedback/:id` | Publik | Detail feedback publik |
+| `POST` | `/api/feedback` | 🔒 JWT | Kirim feedback |
+| `PUT` | `/api/feedback/:id` | 🔒 JWT | Update feedback sendiri |
+| `DELETE` | `/api/feedback/:id` | 🔒 JWT | Hapus feedback sendiri |
+
+---
+
+### Dashboard — `/api/dashboard` 🔒
+
+Semua endpoint dashboard mengembalikan data milik user yang login. Data diambil via SQL agregasi — tidak ada load semua data ke memory.
+
+| Method | Path | Query Params | Deskripsi |
+|--------|------|--------------|-----------|
+| `GET` | `/api/dashboard` | — | Ringkasan penjualan |
+| `GET` | `/api/dashboard/sales` | `range=7d\|30d\|1y` | Data grafik penjualan |
+| `GET` | `/api/dashboard/top-products` | `range=7d\|30d\|1y` | Produk terlaris |
+| `GET` | `/api/dashboard/trends` | `range=7d\|30d\|1y` | Perbandingan pertumbuhan |
+
+#### `GET /api/dashboard`
 
 ```json
 {
   "success": true,
-  "message": "Pesanan berhasil dibuat",
+  "message": "Dashboard overview",
   "data": {
-    "id": "uuid",
-    "total_amount": "45000.00",
-    "status": 0,
-    "items": [
-      {
-        "id": "uuid",
-        "product_id": "uuid",
-        "product_name": "Kopi Susu",
-        "quantity": 2,
-        "unit_price": "15000.00",
-        "subtotal": "30000.00"
-      }
-    ],
-    "created_at": "2026-06-10T03:00:00Z"
+    "total_sales_today": "125000.00",
+    "total_sales_week": "870000.00",
+    "total_sales_month": "3500000.00",
+    "total_orders_today": 8,
+    "total_orders_week": 54,
+    "total_orders_month": 210,
+    "best_selling_product": {
+      "product_id": "uuid",
+      "product_name": "Kopi Susu",
+      "total_quantity": 120,
+      "total_revenue": "1800000.00"
+    },
+    "recent_orders_count": 210
   }
 }
-
 ```
 
-**Aturan Bisnis:**
-
-* `unit_price` diambil dari tabel produk (tidak pernah memercayai input dari klien)
-* `subtotal = quantity × unit_price`
-* `total_amount = Σ subtotals`
-* Mengubah harga produk TIDAK memengaruhi riwayat pesanan sebelumnya
-
-#### Status Pesanan
-
-| Nilai | Arti |
-| --- | --- |
-| `0` | Menunggu (Pending) |
-| `1` | Selesai (Completed) |
-
----
-
-### Umpan Balik (Feedback) — `/api/feedback`
-
-| Metode | Path | Autentikasi | Deskripsi |
-| --- | --- | --- | --- |
-| `GET` | `/api/feedback` | Publik | Tampilkan daftar umpan balik publik (paginasi) |
-| `GET` | `/api/feedback/:id` | Publik | Dapatkan detail umpan balik publik |
-| `POST` | `/api/feedback` | 🔒 JWT | Buat umpan balik |
-| `PUT` | `/api/feedback/:id` | 🔒 JWT | Perbarui umpan balik sendiri |
-| `DELETE` | `/api/feedback/:id` | 🔒 JWT | Hapus umpan balik sendiri (soft-delete) |
-
-#### `POST /api/feedback`
-
-```json
-{
-  "message": "Layanan yang luar biasa!",
-  "is_public": true
-}
-
-```
-
-**Validasi:**
-
-* `message`: 3–1000 karakter (wajib)
-* `is_public`: boolean, secara bawaan bernilai `true`
-
-**Respons `201`:**
+#### `GET /api/dashboard/sales?range=7d`
 
 ```json
 {
   "success": true,
-  "message": "Umpan balik berhasil dibuat",
+  "message": "Sales chart data",
   "data": {
-    "id": "uuid",
-    "user_name": "John Doe",
-    "message": "Layanan yang luar biasa!",
-    "created_at": "2026-06-10T03:00:00Z"
+    "range": "7d",
+    "data": [
+      { "label": "2026-06-06", "total_sales": "150000.00", "total_orders": 10 },
+      { "label": "2026-06-07", "total_sales": "0.00", "total_orders": 0 }
+    ]
   }
 }
-
 ```
 
-**Keamanan:**
+> Range `1y` menggunakan agregasi bulanan (`YYYY-MM`). Range lainnya agregasi harian. Hari tanpa transaksi tetap muncul dengan nilai `0`.
 
-* Endpoint `GET` hanya mengembalikan umpan balik yang bernilai `is_public = true`
-* `PUT`/`DELETE` memberlakukan aturan kepemilikan — mengembalikan `403` jika mengakses umpan balik milik pengguna lain
+#### `GET /api/dashboard/top-products?range=30d`
+
+```json
+{
+  "success": true,
+  "message": "Top products",
+  "data": [
+    {
+      "product_id": "uuid",
+      "product_name": "Kopi Susu",
+      "total_quantity": 120,
+      "total_revenue": "1800000.00"
+    }
+  ]
+}
+```
+
+#### `GET /api/dashboard/trends?range=7d`
+
+```json
+{
+  "success": true,
+  "message": "Sales trends",
+  "data": {
+    "range": "7d",
+    "current_sales": "870000.00",
+    "previous_sales": "650000.00",
+    "sales_growth_pct": 33.85,
+    "current_orders": 54,
+    "previous_orders": 40,
+    "order_growth_pct": 35.0,
+    "sales_trend": "up",
+    "order_trend": "up"
+  }
+}
+```
 
 ---
 
-### Chat AI — `/api/ai` 🔒
-
-| Metode | Path | Autentikasi | Deskripsi |
-| --- | --- | --- | --- |
-| `POST` | `/api/ai/chat` | 🔒 JWT | Kirim pesan ke asisten AI |
+### AI & Voice — `/api/ai` 🔒
 
 #### `POST /api/ai/chat`
 
-```json
-{
-  "message": "Rekomendasikan menu untuk siang hari"
-}
+Chat umum dengan AI assistant.
 
+```json
+{ "message": "Rekomendasikan menu untuk siang hari" }
 ```
 
-**Respons `200`:**
+#### `POST /api/ai/parse-order`
 
+**Flow Voice Order:**
+
+```
+User rekam suara
+↓ FE kirim audio ke Gemini
+↓ Gemini hasilkan JSON mentah:
+  { "items": [{ "n": "baxo", "q": 3 }] }
+↓ FE kirim JSON mentah ke endpoint ini
+↓ BE fuzzy match ke produk di database
+↓ BE kembalikan hasil match ke FE
+↓ FE tampilkan form konfirmasi
+↓ User validasi lalu POST /api/orders
+```
+
+**Request:**
+```json
+{
+  "items": [
+    { "n": "baxo", "q": 3 },
+    { "n": "es teh mnis", "q": 2 }
+  ]
+}
+```
+
+**Response:**
 ```json
 {
   "success": true,
-  "message": "Respons AI berhasil dibuat",
+  "message": "Order parsed from voice input",
   "data": {
-    "reply": "Berikut beberapa rekomendasi menu siang..."
+    "items": [
+      {
+        "product_id": "uuid",
+        "name": "Bakso",
+        "input_name": "baxo",
+        "quantity": 3,
+        "unit_price": "15000.00",
+        "confidence": 0.9333,
+        "needs_confirmation": false
+      },
+      {
+        "product_id": "uuid",
+        "name": "Es Teh Manis",
+        "input_name": "es teh mnis",
+        "quantity": 2,
+        "unit_price": "5000.00",
+        "confidence": 0.9542,
+        "needs_confirmation": false
+      }
+    ]
   }
 }
-
 ```
 
-> Memerlukan pengaturan `AI_API_KEY` dan `AI_API_URL` pada konfigurasi.
+**Aturan Fuzzy Matching:**
+- Algoritma: **Jaro-Winkler** (dari crate `strsim`)
+- Bonus: jika input adalah substring dari nama produk (atau sebaliknya)
+- `confidence`: nilai 0.0–1.0 (4 desimal)
+- `needs_confirmation: true` jika confidence < 0.80
+- Daftar produk **tidak pernah dikirim ke Gemini** — Gemini hanya mengubah suara/teks manusia menjadi JSON mentah
+
+**Setelah dikonfirmasi user, kirim POST /api/orders dengan data yang tervalidasi.**
 
 ---
 
 ## Referensi Error
 
-| Status HTTP | Varian AppError | Penyebab Umum |
-| --- | --- | --- |
-| `400` | `BadRequest` | Request cacat (Malformed request) |
-| `401` | `Unauthorized` | JWT tidak ada/tidak valid atau kredensial salah |
-| `403` | `Forbidden` | Mengakses sumber daya pengguna lain |
-| `404` | `NotFound` | Sumber daya tidak ada atau telah di-soft-delete |
-| `409` | `Conflict` | Email duplikat, nama produk duplikat |
-| `422` | `ValidationError` | Gagal validasi field |
-| `500` | `InternalServerError` | Error pada database atau server |
+| HTTP Status | AppError | Penyebab Umum |
+|-------------|----------|---------------|
+| `400` | `BadRequest` | Request tidak valid |
+| `401` | `Unauthorized` | JWT hilang/invalid, atau password salah |
+| `403` | `Forbidden` | Akses resource milik user lain |
+| `404` | `NotFound` | Resource tidak ditemukan |
+| `409` | `Conflict` | Email/nama produk duplikat |
+| `422` | `ValidationError` | Validasi field gagal, stok tidak cukup |
+| `500` | `InternalServerError` | Error database atau server |
 
 ---
 
 ## Keamanan
 
-* Kata sandi di-hash dengan **bcrypt** (cost bawaan)
-* Token JWT menggunakan **HS256** dengan rahasia (secret) yang dapat dikonfigurasi
-* Semua penulisan (writes) dibatasi ruang lingkupnya per pengguna — akses lintas pengguna akan mengembalikan `403`
-* Penghapusan sementara (Soft delete) menjaga integritas data (data yang dihapus dikecualikan dari semua kueri)
-* Harga pesanan **selalu dihitung di sisi server** — harga dari klien diabaikan
+- Password di-hash dengan **bcrypt**
+- Token JWT menggunakan **HS256** dengan secret yang dapat dikonfigurasi
+- Semua operasi tulis dibatasi per-user — akses lintas user mengembalikan `403`
+- Soft delete menjaga integritas data (record yang dihapus dikecualikan dari semua query)
+- Harga order **selalu dihitung server-side** — total dari klien diabaikan
+- Stok divalidasi atomik dengan `UPDATE ... WHERE stock >= qty`
 
 ---
 
 ## Skema Database
 
-```text
+```sql
 users
-  id (PK), name, email (UNIK), password, description, created_at, updated_at, deleted_at
+  id (PK), name, email (UNIQUE), password, description,
+  created_at, updated_at, deleted_at
 
 products
-  id (PK), user_id (FK→users), name, price (DECIMAL), description, created_at, updated_at, deleted_at
-  UNIK: (user_id, name) per produk aktif
+  id (PK), user_id (FK→users), name, price (DECIMAL),
+  description, image_url, stock (INT),
+  created_at, updated_at, deleted_at
 
 orders
-  id (PK), user_id (FK→users), total_amount (DECIMAL), status (TINYINT), created_at, updated_at, deleted_at
+  id (PK), user_id (FK→users), total_amount (DECIMAL),
+  status (TINYINT: 0=pending, 1=completed),
+  created_at, updated_at, deleted_at
 
 order_items
-  id (PK), order_id (FK→orders), product_id (FK→products), quantity, unit_price (cuplikan/snapshot), subtotal
+  id (PK), order_id (FK→orders), product_id (FK→products),
+  quantity, unit_price (snapshot harga), subtotal
 
 feedback
-  id (PK), user_id (FK→users), message (TEXT), is_public (TINYINT), created_at, updated_at, deleted_at
-
+  id (PK), user_id (FK→users), message (TEXT),
+  is_public (TINYINT), created_at, updated_at, deleted_at
 ```

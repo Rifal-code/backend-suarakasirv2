@@ -11,6 +11,11 @@ pub struct CreateProductRequest {
     pub price: Decimal,
 
     pub description: Option<String>,
+
+    #[validate(url(message = "image_url must be a valid URL"))]
+    pub image_url: Option<String>,
+
+    pub stock: Option<i32>,
 }
 
 #[derive(Debug, Deserialize, Validate)]
@@ -21,6 +26,11 @@ pub struct UpdateProductRequest {
     pub price: Option<Decimal>,
 
     pub description: Option<String>,
+
+    #[validate(url(message = "image_url must be a valid URL"))]
+    pub image_url: Option<String>,
+
+    pub stock: Option<i32>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -29,6 +39,8 @@ pub struct ProductResponse {
     pub name: String,
     pub price: Decimal,
     pub description: Option<String>,
+    pub image_url: Option<String>,
+    pub stock: i32,
     pub created_at: DateTime<Utc>,
 }
 

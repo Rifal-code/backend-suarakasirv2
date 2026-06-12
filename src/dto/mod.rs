@@ -1,5 +1,6 @@
 pub mod ai;
 pub mod auth;
+pub mod dashboard;
 pub mod feedback;
 pub mod order;
 pub mod product;

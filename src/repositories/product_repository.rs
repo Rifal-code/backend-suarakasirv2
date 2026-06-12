@@ -33,7 +33,8 @@ impl ProductRepository {
             .await?;
 
             let products = sqlx::query_as::<_, Product>(
-                "SELECT id, user_id, name, price, description, created_at, updated_at, deleted_at \
+                "SELECT id, user_id, name, price, description, image_url, stock, \
+                 created_at, updated_at, deleted_at \
                  FROM products WHERE user_id = ? AND deleted_at IS NULL AND name LIKE ? \
                  ORDER BY created_at DESC LIMIT ? OFFSET ?",
             )
@@ -54,7 +55,8 @@ impl ProductRepository {
             .await?;
 
             let products = sqlx::query_as::<_, Product>(
-                "SELECT id, user_id, name, price, description, created_at, updated_at, deleted_at \
+                "SELECT id, user_id, name, price, description, image_url, stock, \
+                 created_at, updated_at, deleted_at \
                  FROM products WHERE user_id = ? AND deleted_at IS NULL \
                  ORDER BY created_at DESC LIMIT ? OFFSET ?",
             )
@@ -70,9 +72,24 @@ impl ProductRepository {
         Ok((products, total))
     }
 
+    /// Load all active products for a user — used by fuzzy matching only.
+    pub async fn find_all_active_for_user(&self, user_id: &str) -> Result<Vec<Product>, AppError> {
+        let products = sqlx::query_as::<_, Product>(
+            "SELECT id, user_id, name, price, description, image_url, stock, \
+             created_at, updated_at, deleted_at \
+             FROM products WHERE user_id = ? AND deleted_at IS NULL ORDER BY name ASC",
+        )
+        .bind(user_id)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(products)
+    }
+
     pub async fn find_by_id(&self, id: &str) -> Result<Option<Product>, AppError> {
         let product = sqlx::query_as::<_, Product>(
-            "SELECT id, user_id, name, price, description, created_at, updated_at, deleted_at \
+            "SELECT id, user_id, name, price, description, image_url, stock, \
+             created_at, updated_at, deleted_at \
              FROM products WHERE id = ? AND deleted_at IS NULL",
         )
         .bind(id)
@@ -117,18 +134,22 @@ impl ProductRepository {
         name: &str,
         price: Decimal,
         description: Option<&str>,
+        image_url: Option<&str>,
+        stock: i32,
     ) -> Result<Product, AppError> {
         let now = Utc::now();
 
         sqlx::query(
-            "INSERT INTO products (id, user_id, name, price, description, created_at, updated_at) \
-             VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO products (id, user_id, name, price, description, image_url, stock, \
+             created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(id)
         .bind(user_id)
         .bind(name)
         .bind(price)
         .bind(description)
+        .bind(image_url)
+        .bind(stock)
         .bind(now)
         .bind(now)
         .execute(&self.pool)
@@ -148,6 +169,8 @@ impl ProductRepository {
         name: Option<&str>,
         price: Option<Decimal>,
         description: Option<Option<&str>>,
+        image_url: Option<Option<&str>>,
+        stock: Option<i32>,
     ) -> Result<Product, AppError> {
         let now = Utc::now();
 
@@ -178,12 +201,53 @@ impl ProductRepository {
                 .await?;
         }
 
+        if let Some(img) = image_url {
+            sqlx::query("UPDATE products SET image_url = ?, updated_at = ? WHERE id = ?")
+                .bind(img)
+                .bind(now)
+                .bind(id)
+                .execute(&self.pool)
+                .await?;
+        }
+
+        if let Some(s) = stock {
+            sqlx::query("UPDATE products SET stock = ?, updated_at = ? WHERE id = ?")
+                .bind(s)
+                .bind(now)
+                .bind(id)
+                .execute(&self.pool)
+                .await?;
+        }
+
         let product = self
             .find_by_id(id)
             .await?
             .ok_or_else(|| AppError::NotFound("Product not found".to_string()))?;
 
         Ok(product)
+    }
+
+    /// Decrement stock atomically. Returns error if stock would go below zero.
+    pub async fn decrement_stock(&self, id: &str, qty: i32) -> Result<(), AppError> {
+        let affected = sqlx::query(
+            "UPDATE products SET stock = stock - ?, updated_at = NOW() \
+             WHERE id = ? AND stock >= ? AND deleted_at IS NULL",
+        )
+        .bind(qty)
+        .bind(id)
+        .bind(qty)
+        .execute(&self.pool)
+        .await?
+        .rows_affected();
+
+        if affected == 0 {
+            return Err(AppError::ValidationError(format!(
+                "Insufficient stock for product id '{}'",
+                id
+            )));
+        }
+
+        Ok(())
     }
 
     pub async fn soft_delete(&self, id: &str) -> Result<(), AppError> {

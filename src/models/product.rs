@@ -10,6 +10,8 @@ pub struct Product {
     pub name: String,
     pub price: Decimal,
     pub description: Option<String>,
+    pub image_url: Option<String>,
+    pub stock: i32,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub deleted_at: Option<DateTime<Utc>>,

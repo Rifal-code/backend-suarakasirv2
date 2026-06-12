@@ -55,14 +55,12 @@ impl ProductService {
         user_id: &str,
         req: CreateProductRequest,
     ) -> Result<ProductResponse, AppError> {
-        // Validate price > 0
         if req.price <= Decimal::ZERO {
             return Err(AppError::ValidationError(
                 "Price must be greater than zero".to_string(),
             ));
         }
 
-        // Check for duplicate name
         if self
             .product_repo
             .name_exists_for_user(&req.name, user_id, None)
@@ -73,10 +71,19 @@ impl ProductService {
             ));
         }
 
+        let stock = req.stock.unwrap_or(0).max(0);
         let id = Product::new_id();
         let product = self
             .product_repo
-            .create(&id, user_id, &req.name, req.price, req.description.as_deref())
+            .create(
+                &id,
+                user_id,
+                &req.name,
+                req.price,
+                req.description.as_deref(),
+                req.image_url.as_deref(),
+                stock,
+            )
             .await?;
 
         Ok(product_to_response(product))
@@ -100,7 +107,6 @@ impl ProductService {
             ));
         }
 
-        // Validate price > 0 if provided
         if let Some(p) = req.price {
             if p <= Decimal::ZERO {
                 return Err(AppError::ValidationError(
@@ -109,7 +115,6 @@ impl ProductService {
             }
         }
 
-        // Check duplicate name (excluding current product)
         if let Some(name) = &req.name {
             if self
                 .product_repo
@@ -129,6 +134,8 @@ impl ProductService {
                 req.name.as_deref(),
                 req.price,
                 req.description.as_ref().map(|d| Some(d.as_str())),
+                req.image_url.as_ref().map(|u| Some(u.as_str())),
+                req.stock,
             )
             .await?;
 
@@ -154,12 +161,14 @@ impl ProductService {
     }
 }
 
-fn product_to_response(p: Product) -> ProductResponse {
+pub fn product_to_response(p: Product) -> ProductResponse {
     ProductResponse {
         id: p.id,
         name: p.name,
         price: p.price,
         description: p.description,
+        image_url: p.image_url,
+        stock: p.stock,
         created_at: p.created_at,
     }
 }
