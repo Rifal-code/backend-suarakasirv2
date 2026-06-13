@@ -75,3 +75,9 @@ impl From<jsonwebtoken::errors::Error> for AppError {
         AppError::Unauthorized(format!("JWT error: {}", err))
     }
 }
+
+impl From<genpdf::error::Error> for AppError {
+    fn from(err: genpdf::error::Error) -> Self {
+        AppError::InternalServerError(format!("PDF error: {}", err))
+    }
+}

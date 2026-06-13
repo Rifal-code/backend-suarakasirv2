@@ -4,6 +4,7 @@ pub mod dashboard;
 pub mod feedback;
 pub mod order;
 pub mod product;
+pub mod report;
 
 pub use order::OrderItemResponse;
 

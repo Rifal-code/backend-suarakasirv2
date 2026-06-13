@@ -14,7 +14,8 @@ impl UserRepository {
 
     pub async fn find_by_email(&self, email: &str) -> Result<Option<User>, AppError> {
         let user = sqlx::query_as::<_, User>(
-            "SELECT id, name, email, password, description, created_at, updated_at, deleted_at \
+            "SELECT id, name, email, password, description, address, contact, \
+             created_at, updated_at, deleted_at \
              FROM users WHERE email = ? AND deleted_at IS NULL",
         )
         .bind(email)
@@ -26,7 +27,8 @@ impl UserRepository {
 
     pub async fn find_by_id(&self, id: &str) -> Result<Option<User>, AppError> {
         let user = sqlx::query_as::<_, User>(
-            "SELECT id, name, email, password, description, created_at, updated_at, deleted_at \
+            "SELECT id, name, email, password, description, address, contact, \
+             created_at, updated_at, deleted_at \
              FROM users WHERE id = ? AND deleted_at IS NULL",
         )
         .bind(id)
@@ -75,6 +77,8 @@ impl UserRepository {
         email: Option<&str>,
         password: Option<&str>,
         description: Option<Option<&str>>,
+        address: Option<Option<&str>>,
+        contact: Option<Option<&str>>,
     ) -> Result<User, AppError> {
         let now = Utc::now();
 
@@ -108,6 +112,24 @@ impl UserRepository {
         if let Some(desc) = description {
             sqlx::query("UPDATE users SET description = ?, updated_at = ? WHERE id = ?")
                 .bind(desc)
+                .bind(now)
+                .bind(id)
+                .execute(&self.pool)
+                .await?;
+        }
+
+        if let Some(addr) = address {
+            sqlx::query("UPDATE users SET address = ?, updated_at = ? WHERE id = ?")
+                .bind(addr)
+                .bind(now)
+                .bind(id)
+                .execute(&self.pool)
+                .await?;
+        }
+
+        if let Some(ct) = contact {
+            sqlx::query("UPDATE users SET contact = ?, updated_at = ? WHERE id = ?")
+                .bind(ct)
                 .bind(now)
                 .bind(id)
                 .execute(&self.pool)

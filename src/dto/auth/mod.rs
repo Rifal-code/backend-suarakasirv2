@@ -20,6 +20,12 @@ pub struct UpdateProfileRequest {
     pub password: Option<String>,
 
     pub description: Option<String>,
+
+    #[validate(length(max = 255, message = "Address must not exceed 255 characters"))]
+    pub address: Option<String>,
+
+    #[validate(length(max = 100, message = "Contact must not exceed 100 characters"))]
+    pub contact: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -28,4 +34,6 @@ pub struct ProfileResponse {
     pub name: String,
     pub email: String,
     pub description: Option<String>,
+    pub address: Option<String>,
+    pub contact: Option<String>,
 }
