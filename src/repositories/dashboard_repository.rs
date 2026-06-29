@@ -1,4 +1,4 @@
-use chrono::{DateTime, Datelike, Duration, Utc};
+use chrono::{DateTime, Datelike, Utc};
 use rust_decimal::Decimal;
 use sqlx::MySqlPool;
 
@@ -8,6 +8,14 @@ use crate::{
     },
     errors::AppError,
 };
+
+fn start_of_day_n_days_ago(days: u64) -> DateTime<Utc> {
+    let today = Utc::now().date_naive();
+    let target = today
+        .checked_sub_days(chrono::Days::new(days))
+        .unwrap_or(today);
+    target.and_hms_opt(0, 0, 0).unwrap().and_utc()
+}
 
 #[derive(sqlx::FromRow)]
 struct SumRow {
@@ -83,7 +91,7 @@ impl DashboardRepository {
     }
 
     pub async fn recent_orders_count(&self, user_id: &str) -> Result<i64, AppError> {
-        let since = Utc::now() - Duration::days(30);
+        let since = start_of_day_n_days_ago(30);
         let count: i64 = sqlx::query_scalar(
             "SELECT COUNT(*) FROM orders \
              WHERE user_id = ? AND deleted_at IS NULL AND created_at >= ?",
@@ -107,7 +115,7 @@ impl DashboardRepository {
     ) -> Result<Vec<SalesDataPoint>, AppError> {
         // Generate a series of date labels and join with aggregate
         // MySQL doesn't have generate_series so we query the range and group by DATE
-        let since = Utc::now() - Duration::days(days as i64);
+        let since = start_of_day_n_days_ago(days as u64);
 
         #[derive(sqlx::FromRow)]
         struct DayRow {
@@ -164,7 +172,7 @@ impl DashboardRepository {
         &self,
         user_id: &str,
     ) -> Result<Vec<SalesDataPoint>, AppError> {
-        let since = Utc::now() - Duration::days(365);
+        let since = start_of_day_n_days_ago(365);
 
         #[derive(sqlx::FromRow)]
         struct MonthRow {
@@ -235,7 +243,7 @@ impl DashboardRepository {
         days: u32,
         limit: u32,
     ) -> Result<Vec<DashboardTopProductResponse>, AppError> {
-        let since = Utc::now() - Duration::days(days as i64);
+        let since = start_of_day_n_days_ago(days as u64);
 
         let rows = sqlx::query_as::<_, DashboardTopProductResponse>(
             "SELECT oi.product_id, p.name AS product_name, \

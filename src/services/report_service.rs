@@ -1,4 +1,4 @@
-use chrono::{Duration, Utc};
+use chrono::Utc;
 use genpdf::{
     elements::{Break, LinearLayout, Paragraph, TableLayout},
     fonts,
@@ -68,7 +68,11 @@ impl ReportService {
         };
 
         let now = Utc::now();
-        let since = now - Duration::days(days);
+        let since_date = now
+            .date_naive()
+            .checked_sub_days(chrono::Days::new(days as u64))
+            .unwrap_or(now.date_naive());
+        let since = since_date.and_hms_opt(0, 0, 0).unwrap().and_utc();
 
         let periode_mulai = since.format("%d/%m/%Y").to_string();
         let periode_selesai = now.format("%d/%m/%Y").to_string();
@@ -135,7 +139,12 @@ impl ReportService {
             .unwrap_or(Decimal::ZERO);
 
         // ── Growth vs previous period ────────────────
-        let prev_since = since - Duration::days(days);
+        let prev_since = since_date
+            .checked_sub_days(chrono::Days::new(days as u64))
+            .unwrap_or(since_date)
+            .and_hms_opt(0, 0, 0)
+            .unwrap()
+            .and_utc();
         let (prev_sales, prev_orders): (Decimal, i64) = {
             #[derive(sqlx::FromRow)]
             struct PrevRow { total: Option<Decimal>, cnt: i64 }

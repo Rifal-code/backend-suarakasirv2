@@ -24,8 +24,21 @@ impl DashboardService {
         let today_start = now.date_naive().and_hms_opt(0, 0, 0).unwrap_or_default();
         let today_start_utc = chrono::DateTime::<Utc>::from_naive_utc_and_offset(today_start, Utc);
 
-        let week_start = now - Duration::days(7);
-        let month_start = now - Duration::days(30);
+        let week_start_date = now.date_naive()
+            .checked_sub_days(chrono::Days::new(7))
+            .unwrap_or(now.date_naive());
+        let week_start = week_start_date
+            .and_hms_opt(0, 0, 0)
+            .unwrap()
+            .and_utc();
+
+        let month_start_date = now.date_naive()
+            .checked_sub_days(chrono::Days::new(30))
+            .unwrap_or(now.date_naive());
+        let month_start = month_start_date
+            .and_hms_opt(0, 0, 0)
+            .unwrap()
+            .and_utc();
 
         let (total_sales_today, total_orders_today) = self
             .repo
