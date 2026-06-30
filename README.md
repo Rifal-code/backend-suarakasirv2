@@ -1,45 +1,167 @@
-# Kasir API
+<div align="center">
+  <h1>🧾 Suara Kasir</h1>
+  <p><strong>Backend API Point-of-Sale untuk UMKM Indonesia, bertenaga Rust & Generative AI</strong></p>
 
-Backend REST API untuk sistem Point-of-Sale (Kasir) UMKM. Dibangun dengan Rust, Axum, SQLx, dan MySQL. Mendukung autentikasi JWT, manajemen produk (termasuk gambar & stok), order dengan validasi stok, dashboard penjualan, pemrosesan order via suara menggunakan fuzzy matching, dan laporan PDF penjualan bertenaga AI.
+  <p>
+    <img alt="Rust" src="https://img.shields.io/badge/Rust-2021%20Edition-orange?logo=rust&logoColor=white" />
+    <img alt="Axum" src="https://img.shields.io/badge/Axum-0.8-blue?logo=rust" />
+    <img alt="MySQL" src="https://img.shields.io/badge/MySQL-8.0+-4479A1?logo=mysql&logoColor=white" />
+    <img alt="SQLx" src="https://img.shields.io/badge/SQLx-0.8-lightgrey" />
+    <img alt="JWT" src="https://img.shields.io/badge/Auth-JWT-yellow?logo=jsonwebtokens" />
+    <img alt="Gemini AI" src="https://img.shields.io/badge/AI-Gemini%20API-8E75B2?logo=google&logoColor=white" />
+    <img alt="License" src="https://img.shields.io/badge/License-MIT-green" />
+  </p>
 
-## Tech Stack
+  <p>
+    <a href="./api-docs.md">📖 Dokumentasi API Lengkap</a>
+    ·
+    <a href="#-persiapan">🚀 Quick Start</a>
+    ·
+    <a href="#-arsitektur">🏗️ Arsitektur</a>
+    ·
+    <a href="#-fitur-unggulan">✨ Fitur</a>
+  </p>
+</div>
+
+---
+
+<details>
+<summary><strong>📑 Daftar Isi (klik untuk buka)</strong></summary>
+
+- [Latar Belakang](#-latar-belakang)
+- [Permasalahan](#-permasalahan)
+- [Peluang dengan Generative AI](#-peluang-dengan-generative-ai)
+- [Tantangan IDCamp Developer Challenge](#-tantangan-idcamp-developer-challenge)
+- [Fitur Unggulan](#-fitur-unggulan)
+- [Tech Stack](#-tech-stack)
+- [Persiapan](#-persiapan)
+  - [Prasyarat](#1-prasyarat)
+  - [Konfigurasi Environment](#2-konfigurasi-environment)
+  - [Migrasi Database](#3-migrasi-database)
+  - [Jalankan Server](#4-jalankan-server)
+- [Arsitektur](#-arsitektur)
+- [Endpoint API](#-endpoint-api)
+- [Format Response](#-format-response)
+- [Keamanan](#-keamanan)
+- [Skema Database](#-skema-database)
+- [Catatan Deployment](#-catatan-deployment)
+
+</details>
+
+---
+
+## 🇮🇩 Latar Belakang
+
+Indonesia memiliki lebih dari **64 juta pelaku UMKM** yang secara kolektif menyumbang **60% PDB nasional** dan menjadi penyerap utama tenaga kerja di hampir seluruh wilayah. Angka ini menempatkan UMKM bukan sekadar sektor ekonomi, melainkan fondasi sosial yang menopang kehidupan jutaan keluarga Indonesia.
+
+Namun di balik besarnya skala tersebut, ada kenyataan yang sulit diabaikan: sebagian besar pelaku UMKM masih beroperasi dengan cara-cara yang belum berubah selama bertahun-tahun — pencatatan manual, pemasaran dari mulut ke mulut, dan pengelolaan bisnis yang sepenuhnya bergantung pada intuisi pemilik.
+
+Transformasi digital yang terus digaungkan nyatanya belum menyentuh mayoritas dari mereka. Hanya **12% UMKM** yang benar-benar berhasil mengintegrasikan teknologi ke dalam operasional bisnisnya. Bukan karena tidak mau, tetapi karena solusi yang tersedia seringkali terlalu rumit, terlalu mahal, atau tidak dirancang dengan memahami realita lapangan yang mereka hadapi setiap hari.
+
+---
+
+## ⚠️ Permasalahan
+
+Tantangan utama yang dihadapi pelaku UMKM dalam era digital bukan hanya soal akses terhadap teknologi, melainkan kemampuan untuk memanfaatkannya secara efektif.
+
+- **44%** pelaku UMKM belum memahami cara menggunakan iklan digital
+- **60%** mengeluhkan persaingan harga yang tidak seimbang di platform marketplace
+- Pencatatan keuangan masih dilakukan secara **manual**
+- Ketidakmampuan merespons pelanggan secara cepat melalui kanal digital
+- Banyak produk lokal berkualitas **gagal menembus pasar** yang lebih luas karena kendala bahasa dan literasi platform
+
+Akibatnya, potensi besar UMKM Indonesia kerap tidak terealisasi secara optimal, dan transformasi digital yang seharusnya menjadi pendorong pertumbuhan justru terasa jauh dari jangkauan.
+
+---
+
+## 🤖 Peluang dengan Generative AI
+
+Di sinilah **Generative AI** hadir sebagai solusi yang relevan dan demokratis. Teknologi ini mampu mengotomasi berbagai proses yang selama ini membutuhkan keahlian khusus:
+
+- 📝 Pembuatan konten pemasaran otomatis
+- 📊 Pencatatan dan pelaporan keuangan via teks atau suara
+- 📈 Analisis tren penjualan dengan narasi yang mudah dipahami
+- 🛒 Pemrosesan order real-time melalui kanal digital
+
+Tren ini sudah mulai terlihat nyata: **31% UMKM Indonesia** kini sudah mulai menggunakan AI tools untuk kebutuhan konten dan layanan pelanggan. Generative AI membuka peluang bagi siapa saja untuk bersaing secara lebih setara di ekosistem digital — asalkan solusi yang dibangun benar-benar dirancang untuk pengguna non-teknis, tersedia dalam bahasa Indonesia, dan dapat berjalan di perangkat mobile dengan koneksi internet yang terbatas.
+
+---
+
+## 🏆 Tantangan IDCamp Developer Challenge
+
+Dalam kompetisi **IDCamp Developer Challenge**, peserta ditantang untuk membangun solusi berbasis Generative AI yang menjawab *pain point* nyata pelaku UMKM Indonesia. Solusi yang dikembangkan dapat mencakup:
+
+| Area | Deskripsi |
+|---|---|
+| 🎙️ Voice Order | Input transaksi via suara, dikonversi ke order oleh AI |
+| 📊 Dashboard Analitik | Narasi AI yang membantu memahami tren penjualan |
+| 📄 Laporan Otomatis | Generate laporan PDF dengan insight bisnis dari Gemini |
+| 🤝 Asisten Keuangan | Pencatatan dan rekapitulasi transaksi yang sederhana |
+
+**Kasir UMKM** adalah jawaban atas tantangan tersebut — sebuah backend API yang menggabungkan kekuatan Rust untuk performa tinggi dengan Gemini AI untuk kecerdasan bisnis yang inklusif.
+
+> _Melalui challenge ini diharapkan dapat melahirkan solusi-solusi inovatif yang tidak hanya unggul secara teknis, tetapi juga berakar pada pemahaman mendalam tentang konteks dan kebutuhan nyata pelaku UMKM Indonesia._
+
+---
+
+## ✨ Fitur Unggulan
+
+| Fitur | Deskripsi |
+|---|---|
+| 🔐 **Autentikasi JWT** | Register, login, dan manajemen profil lengkap dengan `address` & `contact` |
+| 📦 **Manajemen Produk** | CRUD produk dengan gambar, stok, dan validasi per-user |
+| 🛒 **Order & Stok** | Pembuatan order dengan validasi stok atomik dan harga server-side |
+| 🎙️ **Voice Order AI** | Input order via suara — fuzzy matching Jaro-Winkler ke produk database |
+| 📊 **Dashboard Penjualan** | Overview, grafik harian/bulanan, top produk, dan analisis tren pertumbuhan |
+| 📄 **Laporan PDF** | Generate PDF laporan penjualan dengan insight AI dari Gemini |
+| 💬 **AI Chat** | Asisten bisnis umum berbahasa Indonesia via Gemini API |
+| 📣 **Feedback System** | Kirim dan kelola feedback publik/privat |
+
+---
+
+## 🛠️ Tech Stack
 
 | Lapisan | Teknologi |
 |---|---|
 | Bahasa | Rust (2021 edition) |
 | Web Framework | Axum 0.8 |
-| Database | MySQL (via SQLx 0.8) |
-| Autentikasi | JWT (jsonwebtoken 9) |
-| Hashing Password | bcrypt |
-| Validasi | validator 0.18 |
-| Konfigurasi | dotenvy |
-| Fuzzy Matching | strsim 0.11 (Jaro-Winkler) |
-| AI / Voice | Reqwest → Gemini API |
-| PDF Generation | genpdf 0.2 |
+| Database | MySQL 8.0+ via SQLx 0.8 |
+| Autentikasi | JWT — `jsonwebtoken 9` dengan HS256 |
+| Hashing Password | `bcrypt` |
+| Validasi Input | `validator 0.18` |
+| Konfigurasi | `dotenvy` |
+| Fuzzy Matching | `strsim 0.11` — algoritma Jaro-Winkler |
+| AI / Voice | `reqwest` → Gemini API |
+| PDF Generation | `genpdf 0.2` — pure Rust, tanpa binary eksternal |
+| Error Handling | `thiserror` |
+| Logging | `tracing` + `tracing-subscriber` |
 
 ---
 
-## Persiapan
+## 🚀 Persiapan
 
 ### 1. Prasyarat
 
-- Rust (stable)
+- [Rust](https://rustup.rs/) (stable)
 - MySQL 8.0+
-- Font LiberationSans di direktori `./fonts/` (sudah disertakan di repo)
+- Font `LiberationSans` di direktori `./fonts/` _(sudah disertakan di repo)_
 
-### 2. Konfigurasi
+### 2. Konfigurasi Environment
 
-Salin `.env.example` ke `.env` dan isi nilainya:
+Salin `.env.example` ke `.env` lalu isi nilainya:
 
 ```env
 APP_HOST=127.0.0.1
 APP_PORT=8000
 DATABASE_URL=mysql://root:password@localhost:3306/kasir
-JWT_SECRET=ganti-dengan-secret-yang-aman
+JWT_SECRET=ganti-dengan-secret-yang-aman-minimal-32-karakter
 AI_API_KEY=api-key-gemini-anda
 AI_API_URL=https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent
 FONT_DIR=./fonts
 ```
+
+> [!NOTE]
+> `AI_API_KEY` bersifat opsional. Jika tidak diset, laporan PDF tetap berfungsi dengan insight statis yang dihitung dari data penjualan aktual.
 
 ### 3. Migrasi Database
 
@@ -60,451 +182,284 @@ mysql -u root -p kasir < migrations/006_add_user_address_contact.sql
 cargo run
 ```
 
-Server berjalan di `http://127.0.0.1:8000`.
+Server berjalan di `http://127.0.0.1:8000` 🎉
 
 ---
 
-## Arsitektur
+## 🏗️ Arsitektur
+
+Proyek mengikuti arsitektur berlapis yang ketat dengan pemisahan tanggung jawab yang jelas:
 
 ```
 src/
-├── config.rs
-├── state.rs                       # AppState (db pool + config)
-├── main.rs
-├── database/
-├── models/                        # Struct SQLx FromRow
+├── config.rs                      # Konfigurasi environment
+├── state.rs                       # AppState — db pool + config
+├── main.rs                        # Entry point & router setup
+│
+├── models/                        # Struct database (SQLx FromRow)
 │   ├── user.rs                    # + address, contact
 │   ├── product.rs                 # + image_url, stock
 │   ├── order.rs
 │   └── feedback.rs
-├── dto/                           # DTO Request/Response
-│   ├── auth/                      # + address, contact di Profile
-│   ├── product.rs                 # + image_url, stock
+│
+├── dto/                           # Data Transfer Objects
+│   ├── auth/                      # Register, Login, Profile (+ address, contact)
+│   ├── product.rs
 │   ├── order.rs
 │   ├── feedback.rs
 │   ├── dashboard.rs
-│   ├── report.rs                  # (BARU) Report & PDF
-│   └── ai.rs                      # + ParseOrderRequest, MatchedOrderItem
-├── repositories/                  # Layer akses database
-│   ├── user_repository.rs         # + address, contact
+│   ├── report.rs                  # ReportData, ReportRangeQuery
+│   └── ai.rs                      # AiChat, ParseOrder, MatchedOrderItem
+│
+├── repositories/                  # Layer akses database (SQL murni)
+│   ├── user_repository.rs
 │   ├── product_repository.rs
 │   ├── order_repository.rs
 │   ├── feedback_repository.rs
-│   └── dashboard_repository.rs
+│   └── dashboard_repository.rs    # Agregasi SQL berbasis hari
+│
 ├── services/                      # Layer business logic
-│   ├── auth/                      # + address, contact
+│   ├── auth/
 │   ├── product_service.rs
-│   ├── order_service.rs
+│   ├── order_service.rs           # Validasi stok atomik
 │   ├── feedback_services.rs
 │   ├── dashboard_service.rs
-│   ├── ai_service.rs              # + parse_order + fuzzy matching
-│   ├── ai_insight_service.rs      # (BARU) Insight teks dari Gemini
-│   └── report_service.rs          # (BARU) Agregasi data + PDF genpdf
-├── handlers/                      # HTTP handlers
+│   ├── ai_service.rs              # Chat + fuzzy matching voice order
+│   ├── ai_insight_service.rs      # Generate insight teks via Gemini
+│   └── report_service.rs          # Agregasi data + render PDF (genpdf)
+│
+├── handlers/                      # HTTP request handlers
 │   ├── auth/
 │   ├── products.rs
 │   ├── orders.rs
 │   ├── feedback.rs
 │   ├── dashboard.rs
 │   ├── ai.rs
-│   └── report_handler.rs          # (BARU) GET /reports/sales/pdf
-├── routes/                        # Registrasi route
+│   └── report_handler.rs          # GET /reports/sales/pdf
+│
+├── routes/                        # Registrasi route + middleware
 │   ├── auth.rs
 │   ├── product.rs
 │   ├── order.rs
 │   ├── feedback.rs
 │   ├── dashboard.rs
 │   ├── ai.rs
-│   └── report.rs                  # (BARU) /api/reports
+│   └── report.rs
+│
 ├── middleware/
-│   └── jwt.rs
+│   └── jwt.rs                     # JWT extractor + Claims
+│
 └── errors/
-    └── app_error.rs               # + From<genpdf::error::Error>
+    └── app_error.rs               # AppError enum + IntoResponse
 ```
 
 ---
 
-## Format Response
+## 📡 Endpoint API
 
-Semua endpoint menggunakan format JSON yang konsisten.
+Dokumentasi API lengkap dengan contoh request dan response tersedia di:
 
-**Sukses (satu item):**
-```json
-{
-  "success": true,
-  "message": "...",
-  "data": { ... }
-}
-```
+**[📖 api-docs.md](./api-docs.md)**
 
-**Sukses (daftar paginasi):**
-```json
-{
-  "success": true,
-  "message": "...",
-  "data": [ ... ],
-  "total": 100,
-  "page": 1,
-  "limit": 10
-}
-```
-
-**Error:**
-```json
-{
-  "success": false,
-  "message": "Deskripsi error",
-  "data": null
-}
-```
-
----
-
-## Autentikasi
-
-Endpoint yang dilindungi membutuhkan header `Authorization`:
-
-```
-Authorization: Bearer <jwt_token>
-```
-
-Token JWT berlaku selama **7 hari**.
-
----
-
-## Endpoint API
+Berikut ringkasan semua endpoint yang tersedia:
 
 ### Auth — `/api/auth`
 
 | Method | Path | Auth | Deskripsi |
-|--------|------|------|-----------|
+|---|---|---|---|
 | `POST` | `/api/auth/register` | Publik | Daftar akun baru |
 | `POST` | `/api/auth/login` | Publik | Login, terima JWT |
-| `POST` | `/api/auth/logout` | 🔒 JWT | Logout (hapus token di sisi klien) |
-| `GET`  | `/api/auth/me` | 🔒 JWT | Profil pengguna yang login |
-| `PUT`  | `/api/auth/me` | 🔒 JWT | Update profil |
-
-#### `GET /api/auth/me`
-
-Response sekarang menyertakan `address` dan `contact`:
-
-```json
-{
-  "success": true,
-  "message": "Profile fetched successfully",
-  "data": {
-    "id": "uuid",
-    "name": "Budi Santoso",
-    "email": "budi@example.com",
-    "description": "Pemilik warung makan",
-    "address": "Jl. Merdeka No. 10, Jakarta",
-    "contact": "+6281234567890"
-  }
-}
-```
-
-#### `PUT /api/auth/me`
-
-Dapat mengupdate field berikut:
-
-| Field | Tipe | Wajib | Keterangan |
-|-------|------|-------|------------|
-| `name` | string | Tidak | 2–100 karakter |
-| `email` | string | Tidak | Harus email valid, tidak duplikat |
-| `password` | string | Tidak | Min. 6 karakter |
-| `description` | string | Tidak | Bebas |
-| `address` | string | Tidak | Maks. 255 karakter — digunakan di laporan PDF |
-| `contact` | string | Tidak | Maks. 100 karakter — digunakan di laporan PDF |
-
-> ⚠️ `id`, `created_at`, dan `updated_at` **tidak dapat diubah**.
-
-**Request:**
-```json
-{
-  "name": "Budi Santoso",
-  "address": "Jl. Merdeka No. 10, Jakarta",
-  "contact": "+6281234567890"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Profile updated successfully",
-  "data": {
-    "id": "uuid",
-    "name": "Budi Santoso",
-    "email": "budi@example.com",
-    "description": "...",
-    "address": "Jl. Merdeka No. 10, Jakarta",
-    "contact": "+6281234567890"
-  }
-}
-```
-
----
+| `POST` | `/api/auth/logout` | 🔒 JWT | Logout |
+| `GET` | `/api/auth/me` | 🔒 JWT | Lihat profil (+ address & contact) |
+| `PUT` | `/api/auth/me` | 🔒 JWT | Update profil |
 
 ### Produk — `/api/products` 🔒
 
-Semua endpoint produk memerlukan JWT. User hanya bisa akses produk miliknya sendiri.
-
 | Method | Path | Deskripsi |
-|--------|------|-----------|
-| `GET` | `/api/products` | Daftar produk (paginasi, cari nama) |
+|---|---|---|
+| `GET` | `/api/products` | Daftar produk (paginasi, search) |
 | `GET` | `/api/products/:id` | Detail produk |
 | `POST` | `/api/products` | Buat produk baru |
 | `PUT` | `/api/products/:id` | Update produk |
 | `DELETE` | `/api/products/:id` | Hapus produk (soft delete) |
 
-#### `POST /api/products`
-
-```json
-{
-  "name": "Kopi Susu",
-  "price": "15000.00",
-  "description": "Kopi susu segar",
-  "image_url": "https://example.com/kopi.jpg",
-  "stock": 50
-}
-```
-
-**Aturan:**
-- `name`: 2–255 karakter, unik per user
-- `price`: harus > 0
-- `image_url`: opsional, harus URL valid
-- `stock`: opsional, default 0
-
----
-
 ### Order — `/api/orders` 🔒
 
-> ⚠️ **Harga dihitung server-side.** Harga dari klien diabaikan.
-> ⚠️ **Stok divalidasi** sebelum order disimpan, dan **dikurangi otomatis** setelah berhasil.
-
 | Method | Path | Deskripsi |
-|--------|------|-----------|
-| `GET` | `/api/orders` | Daftar order (paginasi, filter status/tanggal) |
-| `GET` | `/api/orders/:id` | Detail order beserta item |
+|---|---|---|
+| `GET` | `/api/orders` | Daftar order (filter status & tanggal) |
+| `GET` | `/api/orders/:id` | Detail order beserta items |
 | `POST` | `/api/orders` | Buat order baru |
 | `PUT` | `/api/orders/:id` | Update order |
 | `DELETE` | `/api/orders/:id` | Hapus order (soft delete) |
 
-#### `POST /api/orders`
-
-```json
-{
-  "items": [
-    { "product_id": "uuid", "quantity": 2 },
-    { "product_id": "uuid", "quantity": 1 }
-  ]
-}
-```
-
-**Alur:**
-1. Validasi stok tiap produk
-2. Hitung `unit_price` dari database (bukan dari klien)
-3. Hitung `subtotal = quantity × unit_price`
-4. Hitung `total_amount = Σ subtotals`
-5. Simpan order & order_items
-6. Kurangi stok tiap produk
-
-**Error stok tidak cukup (422):**
-```json
-{
-  "success": false,
-  "message": "Insufficient stock for 'Kopi Susu'. Available: 3, requested: 5",
-  "data": null
-}
-```
-
----
-
 ### Feedback — `/api/feedback`
 
 | Method | Path | Auth | Deskripsi |
-|--------|------|------|-----------|
+|---|---|---|---|
 | `GET` | `/api/feedback` | Publik | Daftar feedback publik |
-| `GET` | `/api/feedback/:id` | Publik | Detail feedback publik |
+| `GET` | `/api/feedback/:id` | Publik | Detail feedback |
 | `POST` | `/api/feedback` | 🔒 JWT | Kirim feedback |
 | `PUT` | `/api/feedback/:id` | 🔒 JWT | Update feedback sendiri |
 | `DELETE` | `/api/feedback/:id` | 🔒 JWT | Hapus feedback sendiri |
 
----
-
 ### Dashboard — `/api/dashboard` 🔒
 
-Semua endpoint dashboard mengembalikan data milik user yang login. Data diambil via SQL agregasi — tidak ada load semua data ke memory.
-
-| Method | Path | Query Params | Deskripsi |
-|--------|------|--------------|-----------|
+| Method | Path | Query | Deskripsi |
+|---|---|---|---|
 | `GET` | `/api/dashboard` | — | Ringkasan penjualan |
-| `GET` | `/api/dashboard/sales` | `range=7d\|30d\|1y` | Data grafik penjualan |
+| `GET` | `/api/dashboard/sales` | `range=7d\|30d\|1y` | Grafik penjualan |
 | `GET` | `/api/dashboard/top-products` | `range=7d\|30d\|1y` | Produk terlaris |
-| `GET` | `/api/dashboard/trends` | `range=7d\|30d\|1y` | Perbandingan pertumbuhan |
-
----
+| `GET` | `/api/dashboard/trends` | `range=7d\|30d\|1y` | Tren pertumbuhan |
 
 ### AI & Voice — `/api/ai` 🔒
 
-#### `POST /api/ai/chat`
-
-Chat umum dengan AI assistant.
-
-```json
-{ "message": "Rekomendasikan menu untuk siang hari" }
-```
-
-#### `POST /api/ai/parse-order`
-
-**Flow Voice Order:**
-
-```
-User rekam suara
-↓ FE kirim audio ke Gemini
-↓ Gemini hasilkan JSON mentah:
-  { "items": [{ "n": "baxo", "q": 3 }] }
-↓ FE kirim JSON mentah ke endpoint ini
-↓ BE fuzzy match ke produk di database
-↓ BE kembalikan hasil match ke FE
-↓ FE tampilkan form konfirmasi
-↓ User validasi lalu POST /api/orders
-```
-
-**Request:**
-```json
-{
-  "items": [
-    { "n": "baxo", "q": 3 },
-    { "n": "es teh mnis", "q": 2 }
-  ]
-}
-```
-
-**Aturan Fuzzy Matching:**
-- Algoritma: **Jaro-Winkler** (dari crate `strsim`)
-- `confidence`: nilai 0.0–1.0 (4 desimal)
-- `needs_confirmation: true` jika confidence < 0.80
-- Daftar produk **tidak pernah dikirim ke Gemini**
-
----
+| Method | Path | Deskripsi |
+|---|---|---|
+| `POST` | `/api/ai/chat` | Chat dengan AI assistant |
+| `POST` | `/api/ai/parse-order` | Parse order dari input suara (fuzzy matching) |
 
 ### Laporan PDF — `/api/reports` 🔒
 
-#### `GET /api/reports/sales/pdf`
-
-Menghasilkan laporan penjualan dalam format PDF. Data diambil dari database berdasarkan user yang login.
-
-**Autentikasi:** Bearer JWT
-
-**Query Parameters:**
-
-| Parameter | Nilai | Default | Keterangan |
-|-----------|-------|---------|------------|
-| `range` | `7d` | ✓ | Laporan 7 hari terakhir |
-| `range` | `30d` | — | Laporan 30 hari terakhir |
-| `range` | `1y` | — | Laporan 1 tahun terakhir |
-
-**Contoh Request:**
-
-```http
-GET /api/reports/sales/pdf?range=30d
-Authorization: Bearer <jwt_token>
-```
-
-**Response:** `application/pdf` (file PDF langsung diunduh)
-
-```
-Content-Type: application/pdf
-Content-Disposition: attachment; filename="laporan-penjualan-30d.pdf"
-```
-
-**Isi PDF (mengikuti struktur `templates/reports/sales_report.html`):**
-
-1. **Header UMKM** — nama, alamat, dan kontak dari profil user
-2. **Informasi Laporan** — periode mulai & selesai
-3. **Ringkasan** — total omzet, jumlah transaksi, total item, produk terlaris
-4. **Insight AI** — analisis bisnis singkat dalam bahasa Indonesia yang dihasilkan Gemini
-5. **Produk Terlaris** — tabel top 10 produk berdasarkan qty terjual
-6. **Detail Transaksi** — tabel semua order items dalam periode dengan total footer
-7. **Tanda Tangan** — nama pemilik dan tanggal cetak
-
-> 💡 **Tips:** Lengkapi dulu `address` dan `contact` di profil (`PUT /api/auth/me`) agar laporan PDF menampilkan informasi UMKM yang lengkap.
-
-> 💡 **Insight AI:** Jika `AI_API_KEY` tidak dikonfigurasi, sistem akan menggunakan insight statis yang dihitung dari data penjualan aktual.
+| Method | Path | Query | Deskripsi |
+|---|---|---|---|
+| `GET` | `/api/reports/sales/pdf` | `range=7d\|30d\|1y` | Download laporan PDF bertenaga AI |
 
 ---
 
-## Referensi Error
+## 📋 Format Response
 
-| HTTP Status | AppError | Penyebab Umum |
-|-------------|----------|---------------|
-| `400` | `BadRequest` | Request tidak valid |
-| `401` | `Unauthorized` | JWT hilang/invalid, atau password salah |
-| `403` | `Forbidden` | Akses resource milik user lain |
-| `404` | `NotFound` | Resource tidak ditemukan |
-| `409` | `Conflict` | Email/nama produk duplikat |
-| `422` | `ValidationError` | Validasi field gagal, stok tidak cukup |
-| `500` | `InternalServerError` | Error database, server, atau PDF generation |
+Semua endpoint menggunakan format JSON yang konsisten:
+
+<details>
+<summary>Sukses — single item</summary>
+
+```json
+{
+    "success": true,
+    "message": "...",
+    "data": { }
+}
+```
+
+</details>
+
+<details>
+<summary>Sukses — list & paginasi</summary>
+
+```json
+{
+    "success": true,
+    "message": "...",
+    "data": [ ],
+    "total": 100,
+    "page": 1,
+    "limit": 10
+}
+```
+
+</details>
+
+<details>
+<summary>Error</summary>
+
+```json
+{
+    "success": false,
+    "message": "Deskripsi error",
+    "data": null
+}
+```
+
+| HTTP Status | Penyebab |
+|---|---|
+| `400` | Request tidak valid |
+| `401` | JWT hilang atau tidak valid |
+| `403` | Akses ke resource milik user lain |
+| `404` | Resource tidak ditemukan |
+| `409` | Duplikasi data (email, nama produk) |
+| `422` | Validasi field gagal, stok tidak cukup |
+| `500` | Internal server error |
+
+</details>
 
 ---
 
-## Keamanan
+## 🔒 Keamanan
 
-- Password di-hash dengan **bcrypt**
-- Token JWT menggunakan **HS256** dengan secret yang dapat dikonfigurasi
-- Semua operasi tulis dibatasi per-user — akses lintas user mengembalikan `403`
-- Soft delete menjaga integritas data (record yang dihapus dikecualikan dari semua query)
-- Harga order **selalu dihitung server-side** — total dari klien diabaikan
-- Stok divalidasi atomik dengan `UPDATE ... WHERE stock >= qty`
+- Password di-hash dengan **bcrypt** sebelum disimpan ke database
+- Token JWT menggunakan **HS256** dengan secret yang dikonfigurasi via env
+- Semua operasi tulis dibatasi per-user — akses lintas user mengembalikan `403 Forbidden`
+- **Soft delete** menjaga integritas data referensial
+- Harga order **selalu dihitung server-side** — harga dari klien diabaikan sepenuhnya
+- Stok divalidasi atomik: `UPDATE ... WHERE stock >= qty`
+- Filter dashboard & laporan selalu di-scope ke `user_id` dari JWT
 
 ---
 
-## Skema Database
+## 🗄️ Skema Database
 
 ```sql
 users
-  id (PK), name, email (UNIQUE), password, description,
-  address VARCHAR(255),          -- BARU: alamat UMKM untuk laporan
-  contact VARCHAR(100),          -- BARU: nomor telepon/WA untuk laporan
+  id, name, email (UNIQUE), password, description,
+  address VARCHAR(255),   -- untuk header laporan PDF
+  contact VARCHAR(100),   -- untuk header laporan PDF
   created_at, updated_at, deleted_at
 
 products
-  id (PK), user_id (FK→users), name, price (DECIMAL),
-  description, image_url, stock (INT),
+  id, user_id (FK), name, price DECIMAL,
+  description, image_url, stock INT,
   created_at, updated_at, deleted_at
 
 orders
-  id (PK), user_id (FK→users), total_amount (DECIMAL),
-  status (TINYINT: 0=pending, 1=completed),
+  id, user_id (FK), total_amount DECIMAL,
+  status TINYINT (0=pending, 1=completed),
   created_at, updated_at, deleted_at
 
 order_items
-  id (PK), order_id (FK→orders), product_id (FK→products),
-  quantity, unit_price (snapshot harga), subtotal
+  id, order_id (FK), product_id (FK),
+  quantity, unit_price, subtotal
 
 feedback
-  id (PK), user_id (FK→users), message (TEXT),
-  is_public (TINYINT), created_at, updated_at, deleted_at
+  id, user_id (FK), message TEXT,
+  is_public TINYINT,
+  created_at, updated_at, deleted_at
 ```
 
 ---
 
-## Catatan Deployment
+## 📦 Catatan Deployment
 
-1. **Jalankan migration 006** sebelum start server:
-   ```bash
-   mysql -u root -p kasir < migrations/006_add_user_address_contact.sql
-   ```
+> [!IMPORTANT]
+> Pastikan langkah-langkah berikut dilakukan sebelum menjalankan server di lingkungan produksi.
 
-2. **Pastikan direktori `fonts/` tersedia** di working directory server:
-   ```
-   fonts/
-   ├── LiberationSans-Regular.ttf
-   ├── LiberationSans-Bold.ttf
-   ├── LiberationSans-Italic.ttf
-   └── LiberationSans-BoldItalic.ttf
-   ```
-   Atau set `FONT_DIR=/path/to/fonts` di `.env`.
+**1. Jalankan semua migration database:**
+```bash
+for f in migrations/*.sql; do mysql -u root -p kasir < "$f"; done
+```
 
-3. **AI Insight bersifat opsional** — jika `AI_API_KEY` tidak di-set, laporan tetap bisa dibuat dengan insight statis berdasarkan data DB.
+**2. Pastikan direktori `fonts/` tersedia:**
+```
+fonts/
+├── LiberationSans-Regular.ttf
+├── LiberationSans-Bold.ttf
+├── LiberationSans-Italic.ttf
+└── LiberationSans-BoldItalic.ttf
+```
+Atau set variabel `FONT_DIR=/path/absolut/ke/fonts` di `.env`.
+
+**3. Lengkapi profil UMKM untuk laporan PDF yang optimal:**
+
+Pastikan user mengisi `address` dan `contact` via `PUT /api/auth/me` — data ini akan tampil sebagai header di setiap laporan PDF yang digenerate.
+
+---
+
+<div align="center">
+  <br/>
+  <p>Dibangun dengan ❤️ untuk pelaku UMKM Indonesia</p>
+  <p>
+    <strong>IDCamp Developer Challenge — Generative AI Track</strong>
+  </p>
+  <br/>
+  <a href="./api-docs.md">📖 Lihat Dokumentasi API Lengkap →</a>
+</div>
