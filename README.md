@@ -456,9 +456,8 @@ Pastikan user mengisi `address` dan `contact` via `PUT /api/auth/me` — data in
 
 <div align="center">
   <br/>
-  <p>Dibangun dengan ❤️ untuk pelaku UMKM Indonesia</p>
   <p>
-    <strong>IDCamp Developer Challenge — Generative AI Track</strong>
+    <strong>Suara Kasir - Backend API</strong>
   </p>
   <br/>
   <a href="./api-docs.md">📖 Lihat Dokumentasi API Lengkap →</a>
